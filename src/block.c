@@ -1,85 +1,139 @@
 #include "xalloc.h"
 
+/**
+ * @brief Helper function for header
+ *
+ * @returns the size of the header/block struct.
+ */
 size_t	header_size(void)
 {
-	return (align_up(sizeof(t_MallBlock), _Alignof(max_align_t)));
+	return (align_up(sizeof(t_mallblock), _Alignof(max_align_t)));
 }
 
-// return data from header
-void *block_data(t_MallBlock *block)
+/**
+ * @brief Offset helper to get the data pointer from a header.
+ *
+ * @returns a pointer to the data of a block from its header.
+ */
+void	*block_data(t_mallblock *block)
 {
-    // return ((void *)(block + 1))
-    return ((void *)((char *)block + header_size()));
+	return ((void *)((char *)block + header_size()));
 }
 
-// return header from data
-t_MallBlock *data_block(void *ptr)
+/**
+ * @brief Offset helper to get header from data pointer.
+ *
+ * @returns the block header from a pointer to its data.
+ */
+t_mallblock	*data_block(void *ptr)
 {
-    return ((t_MallBlock *)((char *)ptr - header_size()));
+	return ((t_mallblock *)((char *)ptr - header_size()));
 }
 
-//get next block header (cause align padding)
-t_MallBlock *next_block_addr(t_MallBlock *block)
+/**
+ * @brief Finds the allocated block matching a user pointer.
+ *
+ * Traverses the physical block list and compares the data address
+ * of each known block with ptr.
+ *
+ * @return Matching block header, or NULL if invalid.
+ */
+t_mallblock	*find_block_from_ptr(void *ptr)
 {
-    size_t align;
-    
-    align = align_up(block->blocksize, _Alignof(max_align_t));
-    return ((t_MallBlock *)((char *)block + header_size() + align));
+	t_mallocstate	*state;
+	t_mallblock		*block;
+
+	state = get_malloc_state();
+	block = state->all_blocks.phys_next;
+	while (block != &state->all_blocks)
+	{
+		if (block_data(block) == ptr)
+			return (block);
+		block = block->phys_next;
+	}
+	return (NULL);
 }
 
-// enough space remaining to add a block from requested size
-bool	can_split(t_MallBlock *block, size_t requested)
+/**
+ * @brief Checks if a freelist block can be split.
+ *
+ * Request alloc size, header size, align and an arbitrary size
+ * are taken in count to check if there's enough space in the zone.
+ *
+ * @returns true if the zone can hold the block.
+ */
+bool	can_split(t_mallblock *block, size_t requested)
 {
-    size_t align;
+	size_t	align;
 
-    align = align_up(requested, _Alignof(max_align_t));
-    return (block->blocksize >= (align + header_size() + MIN_SPLIT_DATA));
+	align = align_up(requested, _Alignof(max_align_t));
+	return (block->blocksize >= (align + header_size() + MIN_SPLIT_DATA));
 }
 
-// add a block in list
-t_MallBlock	*split_block(t_MallBlock *block, size_t requested)
+/**
+ * @brief Creates a block with a requested size, rest goes in freelist.
+ *
+ * Remainings of the first alloc stays at its full zone size until a
+ * new alloc is requested. Upon a new alloc requested, you split/slice
+ * a part of that bigger block.
+ *
+ * Basically you start with a single cake slice. Remainings are the rest
+ * of the cake. And then you keep slicing the cake. "requested" is the size of
+ * the wanted slice. Slice goes to the plate, cake goes to the fridge (freelist).
+ *
+ * @returns the new requested block.
+ */
+t_mallblock	*split_block(t_mallblock *block, size_t requested)
 {
-    size_t  align;
-    size_t  old_size;
-    size_t  new_size;
-    bool    old_upper;
-    t_MallBlock *new;
-    t_MallBlock *tmp;
+	t_mallblock	*new;
+	t_mallblock	*tmp;
+	size_t		align;
+	size_t		old_size;
+	size_t		new_size;
+	bool		old_upper;
 
-    old_size = block->blocksize;
-    old_upper = block->is_upper;
-    align = align_up(requested, _Alignof(max_align_t));
+	old_size = block->blocksize;
+	old_upper = block->is_upper;
+	align = align_up(requested, _Alignof(max_align_t));
 
-    if (!can_split(block, requested))
-        return (NULL);
+	if (!can_split(block, requested))
+		return (NULL);
 
-    new = (t_MallBlock *)((char *)block + header_size() + align);
-    new_size = old_size - align - header_size();
-    block->blocksize = align;
-    new->blocksize = new_size;
-    new->zone_type = block->zone_type;
+	new = (t_mallblock *)((char *)block + header_size() + align);
+	new_size = old_size - align - header_size();
+	block->blocksize = align;
+	new->blocksize = new_size;
+	new->zone_type = block->zone_type;
 
-    tmp = block->phys_next;
+	tmp = block->phys_next;
 
-    new->phys_prev = block;
-    new->phys_next = tmp;
-    new->free_next = NULL;
-    new->free_prev = NULL;
-    new->returnable_next = NULL;
-    new->returnable_prev = NULL;
+	new->phys_prev = block;
+	new->phys_next = tmp;
+	new->free_next = NULL;
+	new->free_prev = NULL;
+	new->returnable_next = NULL;
+	new->returnable_prev = NULL;
 
-    block->phys_next = new;
-    tmp->phys_prev = new;
+	block->phys_next = new;
+	tmp->phys_prev = new;
 
-    block->is_upper = false;
+	block->is_upper = false;
 
-    new->is_lower = false;
-    new->is_upper = old_upper;
+	new->is_lower = false;
+	new->is_upper = old_upper;
 
-    return (new);
+	return (new);
 }
 
-bool	blocks_can_merge(t_MallBlock *lower, t_MallBlock *upper)
+/**
+ * @brief Checks if two blocks can be merged.
+ *
+ * Block have to be physically adjacent.
+ * Lowest block in list can't be the highest one and vice-versa
+ *
+ * @returns true if mergeable.
+ */
+bool	blocks_can_merge(t_mallblock *lower, t_mallblock *upper)
 {
 	if (lower == NULL || upper == NULL)
 		return (false);
@@ -96,8 +150,14 @@ bool	blocks_can_merge(t_MallBlock *lower, t_MallBlock *upper)
 	return (true);
 }
 
-// merge two adjacent blocks in freelist into one.
-t_MallBlock	*merge_blocks(t_MallBlock *lower, t_MallBlock *upper)
+/**
+ * @brief Merges two physically adjacent free blocks into a larger block.
+ *
+ * Newly merged block is placed back into the freelist.
+ *
+ * @returns the new merged block.
+ */
+t_mallblock	*merge_blocks(t_mallblock *lower, t_mallblock *upper)
 {
 	if (!blocks_can_merge(lower, upper))
 		return (NULL);
@@ -117,9 +177,16 @@ t_MallBlock	*merge_blocks(t_MallBlock *lower, t_MallBlock *upper)
 	return (lower);
 }
 
-t_MallBlock	*grow_block_into_next(t_MallBlock *block)
+/**
+ * @brief Extends a physical block using the next one.
+ *
+ * Used in realloc().
+ *
+ * @returns new extended block.
+ */
+t_mallblock	*grow_block_into_next(t_mallblock *block)
 {
-	t_MallBlock	*next;
+	t_mallblock	*next;
 
 	next = block->phys_next;
 
@@ -135,7 +202,12 @@ t_MallBlock	*grow_block_into_next(t_MallBlock *block)
 	return (block);
 }
 
-bool	block_is_free(t_MallBlock *block)
+/**
+ * @brief Checks if a block is free.
+ *
+ * @returns true if free.
+ */
+bool	block_is_free(t_mallblock *block)
 {
 	return (block->free_next != NULL && block->free_prev != NULL);
 }

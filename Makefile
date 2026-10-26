@@ -1,8 +1,18 @@
-NAME      	= xalloc
+HOSTTYPE	= $(shell uname -m)_$(shell uname -s)
+
+NAME      	= libft_malloc_$(HOSTTYPE).so
+LINK		= libft_malloc.so
+
 CC			= cc
 CFLAGS		= -Wextra \
 			-Werror \
-			-g
+			-Wall \
+			-g \
+			-fPIC \
+			-pthread
+
+LDFLAGS		= -shared \
+			  -pthread
 
 RM       	= rm
 RMFLAGS   	= -f
@@ -13,13 +23,12 @@ CFILES    	= $(SRCDIR)/allocator.c \
 			  $(SRCDIR)/debug.c \
 			  $(SRCDIR)/free.c \
 			  $(SRCDIR)/freelist.c \
-			  $(SRCDIR)/main.c \
 			  $(SRCDIR)/physlist.c \
 			  $(SRCDIR)/realloc.c \
 			  $(SRCDIR)/returnable.c \
 			  $(SRCDIR)/state.c \
 			  $(SRCDIR)/utils.c \
-			  $(SRCDIR)/zones.c \
+			  $(SRCDIR)/zones.c
 			  
 OBJS      	= $(CFILES:.c=.o)
 
@@ -31,14 +40,19 @@ all:      	$(NAME)
 %.o:		%.c $(IFILES)
 			@$(CC) $(CFLAGS) -I$(INCLDIR) -c $< -o $@
 
-$(NAME):	$(OBJS)
-			@$(CC) $(CFLAGS) $(OBJS) -o $(NAME)
-			@printf "xalloc built successfully\n"
+$(NAME): $(OBJS)
+			@$(CC) $(LDFLAGS) $(OBJS) -o $(NAME)
+			@ln -sf $(NAME) $(LINK)
+			@printf "$(NAME) built successfully\n"
 
 clean:		
 			@$(RM) $(RMFLAGS) $(OBJS)
 			@printf "xalloc cleaned successfully\n"
 
-re:			clean all
+fclean:		clean
+			@$(RM) $(RMFLAGS) $(NAME) $(LINK)
+			@printf "library cleaned successfully\n"
 
-.PHONY:		all clean re
+re:			fclean all
+
+.PHONY: all clean fclean re

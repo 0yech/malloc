@@ -1,17 +1,28 @@
 #include "xalloc.h"
+#include <stdlib.h>
 
 pthread_mutex_t	g_malloc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /**
- * @brief Schizo fake global variable with extra steps 
+ * @brief Schizo fake global variable with extra steps.
  *
- * @returns the static state of the malloc implementation
+ * @returns the static state of the malloc implementation.
  */
-t_MallocState	*get_malloc_state(void)
+t_mallocstate	*get_malloc_state(void)
 {
-	static t_MallocState	state;
+	static t_mallocstate	state;
 
 	return (&state);
+}
+
+static bool	env_enabled(const char *name)
+{
+	char	*value;
+
+	value = getenv(name);
+	if (value == NULL)
+		return (false);
+	return (value[0] == '1');
 }
 
 /**
@@ -21,7 +32,7 @@ t_MallocState	*get_malloc_state(void)
  */
 void	allocator_init(void)
 {
-	t_MallocState	*state;
+	t_mallocstate	*state;
 	size_t			i;
 
 	state = get_malloc_state();
@@ -37,5 +48,8 @@ void	allocator_init(void)
 	phys_list_init(&state->all_blocks);
 	returnable_list_init(&state->returnable);
 	state->initialized = true;
-    state->active_allocations = 0;
+	state->active_allocations = 0;
+	state->debug = env_enabled("MALLOC_DEBUG");
+	state->scribble = env_enabled("MALLOC_SCRIBBLE");
+	state->show_state = env_enabled("MALLOC_SHOW_STATE");
 }

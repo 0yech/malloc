@@ -1,7 +1,7 @@
 #include "xalloc.h"
 
 /**
- * @brief Returns the type of yone from its size in bytes
+ * @brief Returns the type of yone from its size in bytes.
  */
 t_zone_type	get_zone_type(size_t size)
 {
@@ -19,7 +19,7 @@ t_zone_type	get_zone_type(size_t size)
  * of the max payload size for the given zone type, including headers.
  *
  * Final size is rounded up to a multiple of the system page size.
- * Overflow checks are done to prevent size_t overflow (SIZE_MAX)
+ * Overflow checks are done to prevent size_t overflow (SIZE_MAX).
  */
 size_t	zone_size_for(size_t max_payload, size_t pagesize)
 {
@@ -39,17 +39,6 @@ size_t	zone_size_for(size_t max_payload, size_t pagesize)
 	return (zone_size);
 }
 
-// throw
-size_t	tiny_zone_size(size_t pagesize)
-{
-	return (zone_size_for(TINY_MAX, pagesize));
-}
-
-size_t	small_zone_size(size_t pagesize)
-{
-	return (zone_size_for(SMALL_MAX, pagesize));
-}
-
 /**
  * @brief Creates a new mmap() zone with a given TINY/SMALL type
  *
@@ -62,46 +51,46 @@ size_t	small_zone_size(size_t pagesize)
  *
  * @returns a pointer to the header of the first block in the zone
  */
-t_MallBlock	*create_zone(size_t zone_size, t_zone_type type)
+t_mallblock	*create_zone(size_t zone_size, t_zone_type type)
 {
-	t_MallBlock		*block;
-	t_MallocState	*state;
-    t_MallBlock		*first;
+	t_mallblock		*block;
+	t_mallocstate	*state;
+	t_mallblock		*first;
 
 	state = get_malloc_state();
 
 	block = mmap(
-		NULL,
-		zone_size,
-		PROT_READ | PROT_WRITE,
-		MAP_PRIVATE | MAP_ANONYMOUS,
-		-1,
-		0
-	);
+			NULL,
+			zone_size,
+			PROT_READ | PROT_WRITE,
+			MAP_PRIVATE | MAP_ANONYMOUS,
+			-1,
+			0
+			);
 	if (block == MAP_FAILED)
 		return (NULL);
 
 	block->blocksize = zone_size - header_size();
-    block->zone_type = type;
+	block->zone_type = type;
 
 	block->is_lower = true;
 	block->is_upper = true;
 
-    block->free_next = NULL;
-    block->free_prev = NULL;
+	block->free_next = NULL;
+	block->free_prev = NULL;
 
-    block->returnable_next = NULL;
-    block->returnable_prev = NULL;
+	block->returnable_next = NULL;
+	block->returnable_prev = NULL;
 
-    first = state->all_blocks.phys_next;
+	first = state->all_blocks.phys_next;
 
-    block->phys_prev = &state->all_blocks;
-    block->phys_next = first;
+	block->phys_prev = &state->all_blocks;
+	block->phys_next = first;
 
-    state->all_blocks.phys_next = block;
-    first->phys_prev = block;
+	state->all_blocks.phys_next = block;
+	first->phys_prev = block;
 
-    insert_free_block(block);
+	insert_free_block(block);
 
 	return (block);
 }
@@ -116,12 +105,12 @@ t_MallBlock	*create_zone(size_t zone_size, t_zone_type type)
  */
 void	*alloc_large(size_t size)
 {
-	t_MallocState	*state;
-	t_MallBlock		*block;
-	t_MallBlock		*first;
+	t_mallocstate	*state;
+	t_mallblock		*block;
+	t_mallblock		*first;
 	size_t			pagesize;
 	size_t			mapping_size;
-    size_t          raw_size;
+	size_t			raw_size;
 
 	state = get_malloc_state();
 
@@ -129,11 +118,11 @@ void	*alloc_large(size_t size)
 	if (pagesize == (size_t)-1)
 		return (NULL);
 
-    if (size_add_overflow(header_size(), size, &raw_size))
-        return (NULL);
+	if (size_add_overflow(header_size(), size, &raw_size))
+		return (NULL);
 
 	if (!align_up_safe(raw_size, pagesize, &mapping_size))
-        return (NULL);
+		return (NULL);
 
 	block = mmap(
 			NULL,
@@ -142,7 +131,7 @@ void	*alloc_large(size_t size)
 			MAP_PRIVATE | MAP_ANONYMOUS,
 			-1,
 			0
-		);
+			);
 
 	if (block == MAP_FAILED)
 		return (NULL);

@@ -1,24 +1,24 @@
 #include "xalloc.h"
 
 /**
- * @brief Initialize the returnable lsit.
+ * @brief Initialize the returnable list.
  */
-void	returnable_list_init(t_MallBlock *root)
+void	returnable_list_init(t_mallblock *root)
 {
-    root->returnable_next = root;
-    root->returnable_prev = root;
+	root->returnable_next = root;
+	root->returnable_prev = root;
 }
 
 /**
- * @brief Counts returnable zones
+ * @brief Counts returnable zones.
  *
  * When exceeding MAX_RETURNABLE_ZONES,
- * older returnable zones are munmap()'d
+ * older returnable zones are munmap()'d.
  */
 size_t	returnable_count(void)
 {
-	t_MallocState	*state;
-	t_MallBlock		*cur;
+	t_mallocstate	*state;
+	t_mallblock		*cur;
 	size_t			count;
 
 	state = get_malloc_state();
@@ -35,22 +35,22 @@ size_t	returnable_count(void)
 }
 
 /**
- * @brief Checks if a block is returnable
+ * @brief Checks if a block is returnable.
  *
- * @returns true if the node is returnable 
+ * @returns true if the node is returnable. 
  */
-bool	block_is_returnable(t_MallBlock *block)
+bool	block_is_returnable(t_mallblock *block)
 {
 	return (block->returnable_next != NULL
 		&& block->returnable_prev != NULL);
 }
 
 /**
- * @brief Adds a block to the start of the returnable list
+ * @brief Adds a block to the start of the returnable list.
  */
-void	returnable_insert(t_MallBlock *root, t_MallBlock *block)
+void	returnable_insert(t_mallblock *root, t_mallblock *block)
 {
-	t_MallBlock	*first;
+	t_mallblock	*first;
 
 	first = root->returnable_next;
 
@@ -61,9 +61,9 @@ void	returnable_insert(t_MallBlock *root, t_MallBlock *block)
 }
 
 /**
- * @brief remove a block to the start of the returnable list
+ * @brief remove a block to the start of the returnable list.
  */
-void	returnable_remove(t_MallBlock *block)
+void	returnable_remove(t_mallblock *block)
 {
 	block->returnable_next->returnable_prev = block->returnable_prev;
 	block->returnable_prev->returnable_next = block->returnable_next;
@@ -73,9 +73,9 @@ void	returnable_remove(t_MallBlock *block)
 }
 
 /**
- * @brief munmap()s a returnable zone/bock 
+ * @brief munmap()s a returnable zone/bock.
  */
-void	unmap_returnable_zone(t_MallBlock *block)
+void	unmap_returnable_zone(t_mallblock *block)
 {
 	size_t	mapping_size;
 
@@ -91,12 +91,12 @@ void	unmap_returnable_zone(t_MallBlock *block)
 }
 
 /**
- * @brief munmap()s all returnable zones/bocks 
+ * @brief munmap()s all returnable zones/bocks. 
  */
 void	trim_all_returnable(void)
 {
-	t_MallocState	*state;
-	t_MallBlock		*block;
+	t_mallocstate	*state;
+	t_mallblock		*block;
 
 	state = get_malloc_state();
 
@@ -108,12 +108,12 @@ void	trim_all_returnable(void)
 }
 
 /**
- * @brief munmap()s older zones exceeding MAX_RETURNABLE_ZONES
+ * @brief munmap()s older zones exceeding MAX_RETURNABLE_ZONES.
  */
 void	trim_returnable_excess(void)
 {
-	t_MallocState	*state;
-	t_MallBlock		*block;
+	t_mallocstate	*state;
+	t_mallblock		*block;
 	size_t			count;
 
 	state = get_malloc_state();
