@@ -87,20 +87,20 @@ typedef struct s_mallblock	t_mallblock;
 
 struct s_mallblock
 {
-	t_mallblock	*phys_next;
-	t_mallblock	*phys_prev;
+	t_mallblock		*phys_next;
+	t_mallblock		*phys_prev;
 
-	t_mallblock	*free_next;
-	t_mallblock	*free_prev;
+	t_mallblock		*free_next;
+	t_mallblock		*free_prev;
 
-	t_mallblock	*returnable_next;
-	t_mallblock	*returnable_prev;
+	t_mallblock		*returnable_next;
+	t_mallblock		*returnable_prev;
 
-	bool		is_upper;
-	bool		is_lower;
+	size_t			blocksize;
+	unsigned char	zone_type;
 
-	size_t		blocksize;
-	t_zone_type	zone_type;
+	bool			is_upper;
+	bool			is_lower;
 };
 
 /*

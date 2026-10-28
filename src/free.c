@@ -75,10 +75,7 @@ void	xfree_impl(void *ptr)
 	if (state->active_allocations > 0)
 		state->active_allocations--;
 
-	if (state->active_allocations == 0)
-		trim_all_returnable();
-	else
-		trim_returnable_excess();
+	trim_returnable_excess();
 }
 
 /**
