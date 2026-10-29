@@ -78,9 +78,7 @@ t_mallblock	*create_zone(size_t zone_size, t_zone_type type)
 
 	block->free_next = NULL;
 	block->free_prev = NULL;
-
-	block->returnable_next = NULL;
-	block->returnable_prev = NULL;
+	block->is_returnable = false;
 
 	first = state->all_blocks.phys_next;
 
@@ -145,9 +143,7 @@ void	*alloc_large(size_t size)
 
 	block->free_next = NULL;
 	block->free_prev = NULL;
-
-	block->returnable_next = NULL;
-	block->returnable_prev = NULL;
+	block->is_returnable = false;
 
 	first = state->all_blocks.phys_next;
 

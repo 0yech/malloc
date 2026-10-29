@@ -41,8 +41,25 @@ size_t	returnable_count(void)
  */
 bool	block_is_returnable(t_mallblock *block)
 {
-	return (block->returnable_next != NULL
-		&& block->returnable_prev != NULL);
+	return (block->is_returnable);
+}
+
+t_mallblock	*find_returnable_block(size_t requested, t_zone_type type)
+{
+	t_mallocstate	*state;
+	t_mallblock		*cur;
+	size_t			align;
+
+	state = get_malloc_state();
+	align = align_up(requested, _Alignof(max_align_t));
+	cur = state->returnable.returnable_next;
+	while (cur != &state->returnable)
+	{
+		if (cur->zone_type == type && cur->blocksize >= align)
+			return (cur);
+		cur = cur->returnable_next;
+	}
+	return (NULL);
 }
 
 /**
@@ -58,6 +75,7 @@ void	returnable_insert(t_mallblock *root, t_mallblock *block)
 	block->returnable_prev = root;
 	block->returnable_next = first;
 	first->returnable_prev = block;
+	block->is_returnable = true;
 }
 
 /**
@@ -70,6 +88,7 @@ void	returnable_remove(t_mallblock *block)
 
 	block->returnable_next = NULL;
 	block->returnable_prev = NULL;
+	block->is_returnable = false;
 }
 
 /**
@@ -82,7 +101,6 @@ void	unmap_returnable_zone(t_mallblock *block)
 	mapping_size = header_size() + block->blocksize;
 
 	returnable_remove(block);
-	free_list_remove(block);
 
 	block->phys_prev->phys_next = block->phys_next;
 	block->phys_next->phys_prev = block->phys_prev;

@@ -111,8 +111,7 @@ t_mallblock	*split_block(t_mallblock *block, size_t requested)
 	new->phys_next = tmp;
 	new->free_next = NULL;
 	new->free_prev = NULL;
-	new->returnable_next = NULL;
-	new->returnable_prev = NULL;
+	new->is_returnable = false;
 
 	block->phys_next = new;
 	tmp->phys_prev = new;

@@ -45,6 +45,9 @@ void	*xalloc_impl(size_t size)
 	block = find_free_block(size, type);
 
 	if (block == NULL)
+		block = find_returnable_block(size, type);
+
+	if (block == NULL)
 	{
 		pagesize = sysconf(_SC_PAGESIZE);
 		if (pagesize == (size_t)-1)
@@ -65,8 +68,8 @@ void	*xalloc_impl(size_t size)
 
 	if (block_is_returnable(block))
 		returnable_remove(block);
-
-	free_list_remove(block);
+	else
+		free_list_remove(block);
 
 	if (can_split(block, size))
 	{

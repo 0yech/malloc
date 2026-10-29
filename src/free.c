@@ -70,7 +70,10 @@ void	xfree_impl(void *ptr)
 		block = merge_blocks(block, block->phys_next);
 
 	if (block->is_lower && block->is_upper)
+	{
+		free_list_remove(block);
 		returnable_insert(&state->returnable, block);
+	}
 
 	if (state->active_allocations > 0)
 		state->active_allocations--;

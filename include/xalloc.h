@@ -89,18 +89,26 @@ struct s_mallblock
 {
 	t_mallblock		*phys_next;
 	t_mallblock		*phys_prev;
-
-	t_mallblock		*free_next;
-	t_mallblock		*free_prev;
-
-	t_mallblock		*returnable_next;
-	t_mallblock		*returnable_prev;
+	union
+	{
+		struct
+		{
+			t_mallblock		*free_next;
+			t_mallblock		*free_prev;
+		};
+		struct
+		{
+			t_mallblock		*returnable_next;
+			t_mallblock		*returnable_prev;
+		};
+	};
 
 	size_t			blocksize;
 	unsigned char	zone_type;
 
 	bool			is_upper;
 	bool			is_lower;
+	bool			is_returnable;
 };
 
 /*
@@ -164,6 +172,7 @@ t_mallblock		*find_free_block(size_t requested, t_zone_type type);
 /* returnable.c */
 void			returnable_list_init(t_mallblock *root);
 bool			block_is_returnable(t_mallblock *block);
+t_mallblock		*find_returnable_block(size_t requested, t_zone_type type);
 void			returnable_insert(t_mallblock *root, t_mallblock *block);
 void			returnable_remove(t_mallblock *block);
 void			unmap_returnable_zone(t_mallblock *block);
